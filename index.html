@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Local Chess</title>
+  
+  <!-- Chessboard.js CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css" />
+  
   <style>
     body {
       font-family: sans-serif;
@@ -52,8 +55,12 @@
     <textarea id="gamePGN" rows="10" readonly></textarea>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+  <!-- Chess.js (logic) - FIXED CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chess.js@latest/dist/chess.min.js"></script>
+  
+  <!-- Chessboard.js (board rendering) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
+
   <script>
     const game = new Chess();
     const board = Chessboard('board', {
