@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local Chess</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    #board {
+      width: 100%;
+      max-width: 500px;
+    }
+    textarea, input {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 10px;
+      font-family: monospace;
+    }
+    label {
+      font-weight: bold;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+    }
+    .controls > * {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div id="board"></div>
+  </div>
+  <div class="controls">
+    <label for="moveInput">Enter move (e.g. e2e4 or Nf3):</label>
+    <input id="moveInput" type="text" placeholder="Enter move..." />
+    <button onclick="submitMove()">Submit Move</button>
+
+    <label for="pgnInput">Paste PGN / Moves:</label>
+    <textarea id="pgnInput" rows="5" placeholder="Paste full game moves here..."></textarea>
+    <button onclick="loadPGN()">Load PGN</button>
+
+    <label for="gamePGN">Game so far:</label>
+    <textarea id="gamePGN" rows="10" readonly></textarea>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
+  <script>
+    const game = new Chess();
+    const board = Chessboard('board', {
+      draggable: true,
+      position: 'start',
+      onDrop: onDrop
+    });
+
+    function onDrop(source, target) {
+      const move = game.move({ from: source, to: target, promotion: 'q' });
+      if (move === null) return 'snapback';
+      board.position(game.fen());
+      updatePGN();
+    }
+
+    function submitMove() {
+      const moveText = document.getElementById('moveInput').value.trim();
+      const move = game.move(moveText, { sloppy: true });
+      if (move) {
+        board.position(game.fen());
+        updatePGN();
+        document.getElementById('moveInput').value = '';
+      } else {
+        alert("Invalid move: " + moveText);
+      }
+    }
+
+    function loadPGN() {
+      const pgnText = document.getElementById('pgnInput').value;
+      const success = game.load_pgn(pgnText, { sloppy: true });
+      if (!success) {
+        alert("Invalid PGN or move list.");
+      } else {
+        board.position(game.fen());
+        updatePGN();
+      }
+    }
+
+    function updatePGN() {
+      document.getElementById('gamePGN').value = game.pgn();
+    }
+  </script>
+</body>
+</html>
