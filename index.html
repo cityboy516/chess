@@ -55,53 +55,54 @@
     <textarea id="gamePGN" rows="10" readonly></textarea>
   </div>
 
-  <!-- ✅ CORRECT LOGIC ENGINE (works in browser) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<!-- ✅ Load chess.js first -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
-  <!-- Chessboard.js visual layout -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
+<!-- ✅ Then load chessboard.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
 
-  <script>
-    const game = new Chess();
-    const board = Chessboard('board', {
-      draggable: true,
-      position: 'start',
-      onDrop: onDrop
-    });
+<!-- ✅ Then run your script -->
+<script>
+  const game = new Chess();
+  const board = Chessboard('board', {
+    draggable: true,
+    position: 'start',
+    onDrop: onDrop
+  });
 
-    function onDrop(source, target) {
-      const move = game.move({ from: source, to: target, promotion: 'q' });
-      if (move === null) return 'snapback';
+  function onDrop(source, target) {
+    const move = game.move({ from: source, to: target, promotion: 'q' });
+    if (move === null) return 'snapback';
+    board.position(game.fen());
+    updatePGN();
+  }
+
+  function submitMove() {
+    const moveText = document.getElementById('moveInput').value.trim();
+    const move = game.move(moveText, { sloppy: true });
+    if (move) {
+      board.position(game.fen());
+      updatePGN();
+      document.getElementById('moveInput').value = '';
+    } else {
+      alert("Invalid move: " + moveText);
+    }
+  }
+
+  function loadPGN() {
+    const pgnText = document.getElementById('pgnInput').value;
+    const success = game.load_pgn(pgnText, { sloppy: true });
+    if (!success) {
+      alert("Invalid PGN or move list.");
+    } else {
       board.position(game.fen());
       updatePGN();
     }
+  }
 
-    function submitMove() {
-      const moveText = document.getElementById('moveInput').value.trim();
-      const move = game.move(moveText, { sloppy: true });
-      if (move) {
-        board.position(game.fen());
-        updatePGN();
-        document.getElementById('moveInput').value = '';
-      } else {
-        alert("Invalid move: " + moveText);
-      }
-    }
-
-    function loadPGN() {
-      const pgnText = document.getElementById('pgnInput').value;
-      const success = game.load_pgn(pgnText, { sloppy: true });
-      if (!success) {
-        alert("Invalid PGN or move list.");
-      } else {
-        board.position(game.fen());
-        updatePGN();
-      }
-    }
-
-    function updatePGN() {
-      document.getElementById('gamePGN').value = game.pgn();
-    }
-  </script>
+  function updatePGN() {
+    document.getElementById('gamePGN').value = game.pgn();
+  }
+</script>
 </body>
 </html>
