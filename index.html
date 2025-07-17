@@ -90,7 +90,7 @@
 
     function loadPGN() {
       const pgnText = document.getElementById('pgnInput').value;
-      const success = game.loadPgn(pgnText, { sloppy: true });
+      const success = game.load_pgn(pgnText, { sloppy: true });
       if (!success) {
         alert("Invalid PGN or move list.");
       } else {
