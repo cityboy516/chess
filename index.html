@@ -3,117 +3,149 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Local Chess</title>
+  <title>Full Chess Game</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
-<script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-  
+  <!-- ✅ Working Chessboard.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/css/chessboard-1.0.0.min.css" />
+
   <style>
     body {
       font-family: sans-serif;
       margin: 20px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: row;
       gap: 20px;
     }
 
     #board {
-      width: 100%;
-      max-width: 500px;
+      width: 500px;
       height: 500px;
     }
 
-    textarea, input {
+    .controls {
+      max-width: 400px;
+      flex-grow: 1;
+    }
+
+    textarea, input, button {
       width: 100%;
-      box-sizing: border-box;
-      margin-top: 10px;
       font-family: monospace;
+      margin-bottom: 10px;
     }
 
     label {
       font-weight: bold;
     }
 
-    .controls {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .controls > * {
-      margin-bottom: 10px;
+    #status {
+      font-weight: bold;
+      color: darkred;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div>
-    <div id="board"></div>
-  </div>
+  <div id="board"></div>
   <div class="controls">
-    <label for="moveInput">Enter move (e.g. e2e4 or Nf3):</label>
+    <label for="moveInput">Enter move (e.g. e2e4, Nf3):</label>
     <input id="moveInput" type="text" placeholder="Enter move..." />
     <button onclick="submitMove()">Submit Move</button>
 
-    <label for="pgnInput">Paste PGN / Moves:</label>
-    <textarea id="pgnInput" rows="5" placeholder="Paste full game moves here..."></textarea>
+    <label for="pgnInput">Paste PGN:</label>
+    <textarea id="pgnInput" rows="4" placeholder="Paste full game PGN here..."></textarea>
     <button onclick="loadPGN()">Load PGN</button>
 
-    <label for="gamePGN">Game so far:</label>
+    <label for="gamePGN">Game so far (PGN):</label>
     <textarea id="gamePGN" rows="10" readonly></textarea>
+
+    <div id="status"></div>
   </div>
 
-  <!-- ✅ Load chess.js (logic engine) -->
+  <!-- ✅ Game engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
-  <!-- ✅ Load working chessboard.js (visual board) -->
+  <!-- ✅ Drag-and-drop board -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/js/chessboard-1.0.0.min.js"></script>
 
   <script>
-    let game;
-let board;
+    let board;
+    const game = new Chess();
 
-window.onload = function () {
-  game = new Chess();
-
-  board = new ChessBoard('board', {
-    draggable: true,
-    position: 'start',
-    onDrop: onDrop
-  });
-};
+    function onDragStart(source, piece, position, orientation) {
+      if (game.game_over()) return false;
+      if ((game.turn() === 'w' && piece.startsWith('b')) ||
+          (game.turn() === 'b' && piece.startsWith('w'))) return false;
+    }
 
     function onDrop(source, target) {
       const move = game.move({ from: source, to: target, promotion: 'q' });
+
       if (move === null) return 'snapback';
+
       board.position(game.fen());
+      updateStatus();
       updatePGN();
     }
 
+    function updateStatus() {
+      let status = '';
+
+      if (game.in_checkmate()) {
+        status = 'Checkmate! ' + (game.turn() === 'w' ? 'Black' : 'White') + ' wins.';
+      } else if (game.in_draw()) {
+        status = 'Draw!';
+      } else if (game.in_check()) {
+        status = (game.turn() === 'w' ? 'White' : 'Black') + ' is in check.';
+      } else {
+        status = (game.turn() === 'w' ? 'White' : 'Black') + "'s turn.";
+      }
+
+      document.getElementById('status').textContent = status;
+    }
+
+    function updatePGN() {
+      document.getElementById('gamePGN').value = game.pgn();
+    }
+
     function submitMove() {
-      const moveText = document.getElementById('moveInput').value.trim();
-      const move = game.move(moveText, { sloppy: true });
+      const moveInput = document.getElementById('moveInput').value.trim();
+      const move = game.move(moveInput, { sloppy: true });
+
       if (move) {
         board.position(game.fen());
+        updateStatus();
         updatePGN();
         document.getElementById('moveInput').value = '';
       } else {
-        alert("Invalid move: " + moveText);
+        alert("Invalid move.");
       }
     }
 
     function loadPGN() {
       const pgnText = document.getElementById('pgnInput').value;
       const success = game.load_pgn(pgnText, { sloppy: true });
+
       if (!success) {
-        alert("Invalid PGN or move list.");
-      } else {
-        board.position(game.fen());
-        updatePGN();
+        alert("Invalid PGN.");
+        return;
       }
+
+      board.position(game.fen());
+      updateStatus();
+      updatePGN();
     }
 
-    function updatePGN() {
-      document.getElementById('gamePGN').value = game.pgn();
-    }
+    window.onload = function () {
+      board = new ChessBoard('board', {
+        draggable: true,
+        position: 'start',
+        onDragStart: onDragStart,
+        onDrop: onDrop
+      });
+
+      updateStatus();
+      updatePGN();
+    };
   </script>
 </body>
 </html>
