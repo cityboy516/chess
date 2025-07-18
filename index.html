@@ -288,11 +288,12 @@
                 const squareId = toSquareId(row, col);
                 const piece = game.get(squareId); // Get piece from Chess.js board
 
-                // Remove existing piece
-                const existingPiece = square.querySelector('.piece');
-                if (existingPiece) {
-                    existingPiece.remove();
-                }
+                // --- MODIFIED FOR ROBUST PIECE REMOVAL START ---
+                // Remove ALL existing piece elements from the square before adding the correct one.
+                // This ensures no ghost pieces or duplicates remain.
+                const allExistingPieces = square.querySelectorAll('.piece');
+                allExistingPieces.forEach(p => p.remove());
+                // --- MODIFIED FOR ROBUST PIECE REMOVAL END ---
 
                 // Add piece if exists
                 if (piece) {
@@ -314,10 +315,7 @@
                 }
 
                 // Highlight king if in check
-                // --- MODIFIED FOR 0.11.0 COMPATIBILITY START ---
                 if (game.in_check()) {
-                    // In Chess.js 0.11.0, game.king_square() does not exist.
-                    // We need to iterate through the board to find the king of the current player.
                     const turn = game.turn();
                     const kingPieceType = turn === 'w' ? 'K' : 'k';
                     
@@ -325,7 +323,6 @@
                     for (let r = 0; r < 8; r++) {
                         for (let c = 0; c < 8; c++) {
                             const currentPiece = board[r][c];
-                            // Check if the current square has the king of the player whose turn it is
                             if (currentPiece && currentPiece.type === kingPieceType.toLowerCase() && currentPiece.color === turn) {
                                 const kingSquareId = toSquareId(r, c);
                                 if (kingSquareId === squareId) {
@@ -335,7 +332,6 @@
                         }
                     }
                 }
-                // --- MODIFIED FOR 0.11.0 COMPATIBILITY END ---
             });
 
             updateGameStatus();
@@ -532,13 +528,8 @@
                     // If move is somehow illegal despite 'accepts' check (shouldn't happen with correct logic), revert
                     // This is a fallback and generally indicates an issue in `accepts` or `moves`
                     // console.error("Dragula allowed an illegal move, reverting.");
-                    // game.undo(); // Attempt to undo the UI move if Chess.js rejected it - This can be problematic if it's already an illegal move by rules.
                     updateBoard(); // Revert board display to match actual game state (which didn't change)
                 }
-                // Ensure the piece's data-square attribute is updated
-                // This line should only be executed if the move was successful, otherwise the piece should visually snap back
-                // For now, updateBoard will handle the visual snap back.
-                // el.dataset.square = toSquareId; // Removed this line here to allow updateBoard to handle visual position fully.
             });
 
             // Revert piece to source if dropped outside a valid target
