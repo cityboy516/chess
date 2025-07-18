@@ -288,12 +288,10 @@
                 const squareId = toSquareId(row, col);
                 const piece = game.get(squareId); // Get piece from Chess.js board
 
-                // --- MODIFIED FOR ROBUST PIECE REMOVAL START ---
                 // Remove ALL existing piece elements from the square before adding the correct one.
                 // This ensures no ghost pieces or duplicates remain.
                 const allExistingPieces = square.querySelectorAll('.piece');
                 allExistingPieces.forEach(p => p.remove());
-                // --- MODIFIED FOR ROBUST PIECE REMOVAL END ---
 
                 // Add piece if exists
                 if (piece) {
@@ -390,26 +388,20 @@
             const moveNotation = moveInput.value.trim();
 
             if (moveNotation) {
-                // --- ADDED FOR DEBUGGING START ---
                 console.log("Attempting text move:", moveNotation);
                 console.log("Current FEN before move:", game.fen());
-                // --- ADDED FOR DEBUGGING END ---
 
                 const move = game.move(moveNotation, { sloppy: true });
 
-                // --- ADDED FOR DEBUGGING START ---
                 console.log("Result of game.move():", move);
-                // --- ADDED FOR DEBUGGING END ---
 
                 if (move) {
                     lastMove = { from: move.from, to: move.to };
                     updateBoard();
                     moveInput.value = '';
-                    // --- ADDED FOR DEBUGGING ---
                     console.log("Move successful. New FEN:", game.fen());
                 } else {
                     alert('Invalid or illegal move notation. Please try again.');
-                    // --- ADDED FOR DEBUGGING ---
                     console.log("Move failed. 'game.move' returned null.");
                 }
             }
@@ -423,8 +415,6 @@
 
             try {
                 if (game.load_pgn(pgn)) {
-                    // console.log("PGN loaded successfully");
-                    // Update lastMove from the last move in the loaded PGN
                     const history = game.history({ verbose: true });
                     if (history.length > 0) {
                         const last = history[history.length - 1];
@@ -525,18 +515,15 @@
                     lastMove = { from: move.from, to: move.to };
                     updateBoard();
                 } else {
-                    // If move is somehow illegal despite 'accepts' check (shouldn't happen with correct logic), revert
-                    // This is a fallback and generally indicates an issue in `accepts` or `moves`
-                    // console.error("Dragula allowed an illegal move, reverting.");
+                    // If move is somehow illegal despite 'accepts' check, revert
                     updateBoard(); // Revert board display to match actual game state (which didn't change)
                 }
             });
 
             // Revert piece to source if dropped outside a valid target
             dragulaInstance.on('out', function(el, container, source) {
-                // If the piece is dropped on a non-container or outside the board, it should snap back.
                 // This is handled by default by dragula if `accepts` returns false.
-                // No explicit action needed here for a simple revert, as `drop` won't fire for illegal drops.
+                // No explicit action needed here for a simple revert.
             });
         }
 
@@ -545,34 +532,9 @@
             setupDragAndDrop();
         }
 
-
-        // --- ADDED THIS NEW FUNCTION FOR DEBUGGING START ---
-        function setupInitialMoves() {
-            // Ensure the game is reset before applying the sequence for testing
-            game.reset(); // Make sure to reset to initial state
-            game.move('Nc3');
-            game.move('e5');
-            game.move('Nb5');
-            game.move('e4');
-            updateBoard(); // Update the board display after these moves
-            console.log("Board state after 1. Nc3 e5 2. Nb5 e4:", game.fen());
-        }
-        // --- ADDED THIS NEW FUNCTION FOR DEBUGGING END ---
-
-
-        // Enter key support for move input
-        document.getElementById('moveInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                makeMove();
-            }
-        });
-
         // Initialize the game
-        // --- MODIFIED THIS BLOCK START ---
-        initBoard(); // Still call initBoard to set up the HTML squares
-        setupInitialMoves(); // Then apply the specific test moves for debugging
-        // --- MODIFIED THIS BLOCK END ---
-
+        initBoard(); // This will now start the game in the standard opening position
+        // Removed: setupInitialMoves();
     </script>
 </body>
 </html>
