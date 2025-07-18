@@ -2,150 +2,140 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Full Chess Game</title>
-
-  <!-- ✅ Working Chessboard.js CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/css/chessboard-1.0.0.min.css" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fixed Chess Game</title>
   <style>
     body {
       font-family: sans-serif;
-      margin: 20px;
       display: flex;
-      flex-direction: row;
-      gap: 20px;
+      gap: 30px;
+      padding: 20px;
     }
-
-    #board {
-      width: 500px;
-      height: 500px;
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+      border: 2px solid #333;
     }
-
-    .controls {
-      max-width: 400px;
-      flex-grow: 1;
+    .square {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      cursor: pointer;
     }
-
-    textarea, input, button {
+    .light { background: #eee; }
+    .dark { background: #999; }
+    .info {
+      max-width: 300px;
+    }
+    textarea {
       width: 100%;
       font-family: monospace;
-      margin-bottom: 10px;
-    }
-
-    label {
-      font-weight: bold;
-    }
-
-    #status {
-      font-weight: bold;
-      color: darkred;
-      margin-top: 10px;
+      height: 200px;
     }
   </style>
 </head>
 <body>
-  <div id="board"></div>
-  <div class="controls">
-    <label for="moveInput">Enter move (e.g. e2e4, Nf3):</label>
-    <input id="moveInput" type="text" placeholder="Enter move..." />
-    <button onclick="submitMove()">Submit Move</button>
-
-    <label for="pgnInput">Paste PGN:</label>
-    <textarea id="pgnInput" rows="4" placeholder="Paste full game PGN here..."></textarea>
-    <button onclick="loadPGN()">Load PGN</button>
-
-    <label for="gamePGN">Game so far (PGN):</label>
-    <textarea id="gamePGN" rows="10" readonly></textarea>
-
-    <div id="status"></div>
+  <div id="board" class="board"></div>
+  <div class="info">
+    <p><strong>Click a square to move a piece.</strong></p>
+    <p id="status"></p>
+    <textarea id="pgn" readonly></textarea>
   </div>
 
-  <!-- ✅ Game engine -->
+  <!-- chess.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-
-  <!-- ✅ Drag-and-drop board -->
-<script src="https://unpkg.com/chessboardjs@1.0.0/www/js/chessboard.js"></script>
-
   <script>
-    let board;
+    const boardEl = document.getElementById("board");
+    const pgnEl = document.getElementById("pgn");
+    const statusEl = document.getElementById("status");
+
     const game = new Chess();
 
-    function onDragStart(source, piece, position, orientation) {
-      if (game.game_over()) return false;
-      if ((game.turn() === 'w' && piece.startsWith('b')) ||
-          (game.turn() === 'b' && piece.startsWith('w'))) return false;
-    }
+    const unicodePieces = {
+      p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
+      P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔'
+    };
 
-    function onDrop(source, target) {
-      const move = game.move({ from: source, to: target, promotion: 'q' });
+    let fromSquare = null;
 
-      if (move === null) return 'snapback';
+    function renderBoard() {
+      boardEl.innerHTML = "";
+      const position = game.board();
 
-      board.position(game.fen());
-      updateStatus();
-      updatePGN();
-    }
-
-    function updateStatus() {
-      let status = '';
-
-      if (game.in_checkmate()) {
-        status = 'Checkmate! ' + (game.turn() === 'w' ? 'Black' : 'White') + ' wins.';
-      } else if (game.in_draw()) {
-        status = 'Draw!';
-      } else if (game.in_check()) {
-        status = (game.turn() === 'w' ? 'White' : 'Black') + ' is in check.';
-      } else {
-        status = (game.turn() === 'w' ? 'White' : 'Black') + "'s turn.";
+      for (let row = 7; row >= 0; row--) {
+        for (let col = 0; col < 8; col++) {
+          const square = document.createElement("div");
+          square.className = "square " + ((row + col) % 2 === 0 ? "light" : "dark");
+          square.dataset.square = "abcdefgh"[col] + (row + 1);
+          const piece = position[row][col];
+          if (piece) square.textContent = unicodePieces[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
+          square.onclick = handleClick;
+          boardEl.appendChild(square);
+        }
       }
 
-      document.getElementById('status').textContent = status;
+      updateStatus();
+    }
+
+    function handleClick(e) {
+      const square = e.currentTarget.dataset.square;
+
+      if (!fromSquare) {
+        fromSquare = square;
+        e.currentTarget.style.outline = "2px solid red";
+      } else {
+        const move = game.move({ from: fromSquare, to: square, promotion: 'q' });
+
+        clearHighlights();
+
+        if (!move) {
+          alert("Illegal move!");
+          fromSquare = null;
+          return;
+        }
+
+        fromSquare = null;
+        renderBoard();
+        updatePGN();
+        checkGameEnd();
+      }
+    }
+
+    function clearHighlights() {
+      document.querySelectorAll('.square').forEach(sq => sq.style.outline = "");
     }
 
     function updatePGN() {
-      document.getElementById('gamePGN').value = game.pgn();
+      pgnEl.value = game.pgn();
     }
 
-    function submitMove() {
-      const moveInput = document.getElementById('moveInput').value.trim();
-      const move = game.move(moveInput, { sloppy: true });
-
-      if (move) {
-        board.position(game.fen());
-        updateStatus();
-        updatePGN();
-        document.getElementById('moveInput').value = '';
+    function updateStatus() {
+      if (game.in_checkmate()) {
+        statusEl.textContent = "Checkmate!";
+      } else if (game.in_draw()) {
+        statusEl.textContent = "Draw!";
+      } else if (game.in_check()) {
+        statusEl.textContent = (game.turn() === 'w' ? "White" : "Black") + " is in check.";
       } else {
-        alert("Invalid move.");
+        statusEl.textContent = (game.turn() === 'w' ? "White" : "Black") + "'s turn.";
       }
     }
 
-    function loadPGN() {
-      const pgnText = document.getElementById('pgnInput').value;
-      const success = game.load_pgn(pgnText, { sloppy: true });
-
-      if (!success) {
-        alert("Invalid PGN.");
-        return;
+    function checkGameEnd() {
+      if (game.game_over()) {
+        if (game.in_checkmate()) {
+          alert("Checkmate!");
+        } else if (game.in_draw()) {
+          alert("Draw!");
+        }
       }
-
-      board.position(game.fen());
-      updateStatus();
-      updatePGN();
     }
 
-    window.onload = function () {
-      board = new Chessboard('board', {
-        draggable: true,
-        position: 'start',
-        onDragStart: onDragStart,
-        onDrop: onDrop
-      });
-
-      updateStatus();
-      updatePGN();
-    };
+    renderBoard();
   </script>
 </body>
 </html>
