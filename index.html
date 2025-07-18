@@ -378,13 +378,27 @@
             const moveNotation = moveInput.value.trim();
 
             if (moveNotation) {
-                const move = game.move(moveNotation, { sloppy: true }); // sloppy: true allows moves like 'e4' instead of 'Pe4'
+                // --- ADDED FOR DEBUGGING START ---
+                console.log("Attempting text move:", moveNotation);
+                console.log("Current FEN before move:", game.fen());
+                // --- ADDED FOR DEBUGGING END ---
+
+                const move = game.move(moveNotation, { sloppy: true });
+
+                // --- ADDED FOR DEBUGGING START ---
+                console.log("Result of game.move():", move);
+                // --- ADDED FOR DEBUGGING END ---
+
                 if (move) {
                     lastMove = { from: move.from, to: move.to };
                     updateBoard();
                     moveInput.value = '';
+                    // --- ADDED FOR DEBUGGING ---
+                    console.log("Move successful. New FEN:", game.fen());
                 } else {
                     alert('Invalid or illegal move notation. Please try again.');
+                    // --- ADDED FOR DEBUGGING ---
+                    console.log("Move failed. 'game.move' returned null.");
                 }
             }
         }
@@ -502,11 +516,13 @@
                     // If move is somehow illegal despite 'accepts' check (shouldn't happen with correct logic), revert
                     // This is a fallback and generally indicates an issue in `accepts` or `moves`
                     // console.error("Dragula allowed an illegal move, reverting.");
-                    game.undo(); // Attempt to undo the UI move if Chess.js rejected it
-                    updateBoard(); // Revert board state
+                    // game.undo(); // Attempt to undo the UI move if Chess.js rejected it - This can be problematic if it's already an illegal move by rules.
+                    updateBoard(); // Revert board display to match actual game state (which didn't change)
                 }
                 // Ensure the piece's data-square attribute is updated
-                el.dataset.square = toSquareId;
+                // This line should only be executed if the move was successful, otherwise the piece should visually snap back
+                // For now, updateBoard will handle the visual snap back.
+                // el.dataset.square = toSquareId; // Removed this line here to allow updateBoard to handle visual position fully.
             });
 
             // Revert piece to source if dropped outside a valid target
@@ -522,6 +538,21 @@
             setupDragAndDrop();
         }
 
+
+        // --- ADD THIS NEW FUNCTION START ---
+        function setupInitialMoves() {
+            // Ensure the game is reset before applying the sequence for testing
+            game.reset(); // Make sure to reset to initial state
+            game.move('Nc3');
+            game.move('e5');
+            game.move('Nb5');
+            game.move('e4');
+            updateBoard(); // Update the board display after these moves
+            console.log("Board state after 1. Nc3 e5 2. Nb5 e4:", game.fen());
+        }
+        // --- ADD THIS NEW FUNCTION END ---
+
+
         // Enter key support for move input
         document.getElementById('moveInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -530,7 +561,12 @@
         });
 
         // Initialize the game
-        initBoard();
+        // --- MODIFY THIS BLOCK START ---
+        // Replace: initBoard();
+        initBoard(); // Still call initBoard to set up the HTML squares
+        setupInitialMoves(); // Then apply the specific test moves for debugging
+        // --- MODIFY THIS BLOCK END ---
+
     </script>
 </body>
 </html>
