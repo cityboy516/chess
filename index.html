@@ -314,12 +314,28 @@
                 }
 
                 // Highlight king if in check
+                // --- MODIFIED FOR 0.11.0 COMPATIBILITY START ---
                 if (game.in_check()) {
-                    const kingSquare = game.king_square(game.turn()); // Get king square for current player
-                    if (kingSquare && kingSquare.square === squareId) {
-                        square.classList.add('highlight-check');
+                    // In Chess.js 0.11.0, game.king_square() does not exist.
+                    // We need to iterate through the board to find the king of the current player.
+                    const turn = game.turn();
+                    const kingPieceType = turn === 'w' ? 'K' : 'k';
+                    
+                    const board = game.board(); // Get the 2D array representation of the board
+                    for (let r = 0; r < 8; r++) {
+                        for (let c = 0; c < 8; c++) {
+                            const currentPiece = board[r][c];
+                            // Check if the current square has the king of the player whose turn it is
+                            if (currentPiece && currentPiece.type === kingPieceType.toLowerCase() && currentPiece.color === turn) {
+                                const kingSquareId = toSquareId(r, c);
+                                if (kingSquareId === squareId) {
+                                    square.classList.add('highlight-check');
+                                }
+                            }
+                        }
                     }
                 }
+                // --- MODIFIED FOR 0.11.0 COMPATIBILITY END ---
             });
 
             updateGameStatus();
@@ -539,7 +555,7 @@
         }
 
 
-        // --- ADD THIS NEW FUNCTION START ---
+        // --- ADDED THIS NEW FUNCTION FOR DEBUGGING START ---
         function setupInitialMoves() {
             // Ensure the game is reset before applying the sequence for testing
             game.reset(); // Make sure to reset to initial state
@@ -550,7 +566,7 @@
             updateBoard(); // Update the board display after these moves
             console.log("Board state after 1. Nc3 e5 2. Nb5 e4:", game.fen());
         }
-        // --- ADD THIS NEW FUNCTION END ---
+        // --- ADDED THIS NEW FUNCTION FOR DEBUGGING END ---
 
 
         // Enter key support for move input
@@ -561,11 +577,10 @@
         });
 
         // Initialize the game
-        // --- MODIFY THIS BLOCK START ---
-        // Replace: initBoard();
+        // --- MODIFIED THIS BLOCK START ---
         initBoard(); // Still call initBoard to set up the HTML squares
         setupInitialMoves(); // Then apply the specific test moves for debugging
-        // --- MODIFY THIS BLOCK END ---
+        // --- MODIFIED THIS BLOCK END ---
 
     </script>
 </body>
